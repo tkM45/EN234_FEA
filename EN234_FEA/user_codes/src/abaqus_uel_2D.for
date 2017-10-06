@@ -197,8 +197,6 @@
         B(4,1:2*NNODE:2) = dNdx(1:NNODE,2)
         B(4,2:2*NNODE:2) = dNdx(1:NNODE,1)
         
-        
-        
     
         strain = matmul(B(1:4,1:2*NNODE),U(1:2*NNODE))
     
