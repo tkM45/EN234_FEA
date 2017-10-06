@@ -205,7 +205,7 @@
     !
     !
       do j = 1,NDLOAD
-
+      
         call abq_facenodes_3D(NNODE,iabs(JDLTYP(j,1)),
      1                                     face_node_list,nfacenodes)
 

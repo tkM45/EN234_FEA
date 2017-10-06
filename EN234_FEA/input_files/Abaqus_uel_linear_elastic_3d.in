@@ -100,7 +100,7 @@
            1, 3, VALUE, 0.d0
            side, 2, VALUE, 0.d0
            left, 1, VALUE, 0.d0
-%           right, 1, HISTORY, dof_history  % Uncomment this line to prescribe the displacement of the RH side of the mesh
+		   right, 1, HISTORY, dof_history  % Uncomment this line to prescribe the displacement of the RH side of the mesh
         END DEGREES OF FREEDOM
 
 
@@ -108,9 +108,9 @@
 %       The syntax is: 
 %           element set name, Un, history name   (the Un uses the ABAQUS convention for *DLOAD - n specifies the face number)
 
-        DISTRIBUTED LOADS
-          end_element, U4, dload_history
-        END DISTRIBUTED LOADS
+%        DISTRIBUTED LOADS
+%          end_element, U4, dload_history
+%        END DISTRIBUTED LOADS
 
 
    END BOUNDARY CONDITIONS

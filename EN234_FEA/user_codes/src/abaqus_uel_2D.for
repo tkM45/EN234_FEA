@@ -125,6 +125,7 @@
       double precision  ::  alpha(4)                          ! Internal DOF for incompatible mode element
       double precision  ::  dxidx(2,2), determinant, det0     ! Jacobian inverse and determinant
       double precision  ::  E, xnu, D44, D11, D12             ! Material properties
+      !double precision :: trial(5,16)
 
     !
     !     Example ABAQUS UEL implementing 2D linear elastic elements
@@ -158,6 +159,10 @@
       E = PROPS(1)
       xnu = PROPS(2)
       
+      
+      !--------------
+      !Define D for a plane strain matrix
+      !--------------
       d44 = 0.5D0*E/(1+xnu)
       d11 = (1.D0-xnu)*E/( (1+xnu)*(1-2.D0*xnu) )      
       d12 = xnu*E/( (1+xnu)*(1-2.D0*xnu) )
@@ -168,6 +173,9 @@
       D(4,4) = d44
           
       ENERGY(1:8) = 0.d0
+      
+      !trial=0.d0
+      !trial(2,2:16:2) = 22
     
     !     --  Loop over integration points
       do kint = 1, n_points
@@ -175,16 +183,21 @@
         call abq_UEL_2D_shapefunctions(xi(1:2,kint),NNODE,N,dNdxi)
         dxdxi = matmul(coords(1:2,1:NNODE),dNdxi(1:NNODE,1:2))
         
-        call abq_inverse_LU(dxdxi,dxidx,2)
-        !call abq_UEL_invert3d(dxdxi,dxidx,determinant)        
+        call abq_inverse_LU(dxdxi,dxidx,2)      
         
         dNdx(1:NNODE,1:2) = matmul(dNdxi(1:NNODE,1:2),dxidx)
         
+        
+        !----------------
+        !Define the B Matrix
+        !--------------------
         B = 0.d0
-        B(1,1:2*NNODE-2:2) = dNdx(1:NNODE,1)
-        B(2,2:2*NNODE-1:2) = dNdx(1:NNODE,2)        
-        B(4,1:2*NNODE-2:2) = dNdx(1:NNODE,2)
-        B(4,2:2*NNODE-1:2) = dNdx(1:NNODE,1)
+        B(1,1:2*NNODE:2) = dNdx(1:NNODE,1)
+        B(2,2:2*NNODE:2) = dNdx(1:NNODE,2)        
+        B(4,1:2*NNODE:2) = dNdx(1:NNODE,2)
+        B(4,2:2*NNODE:2) = dNdx(1:NNODE,1)
+        
+        
         
     
         strain = matmul(B(1:4,1:2*NNODE),U(1:2*NNODE))
@@ -203,12 +216,14 @@
         ENERGY(2) = ENERGY(2)
      1   + 0.5D0*dot_product(stress,strain)*w(kint)*determinant           ! Store the elastic strain energy
     
-        if (NSVARS>=n_points*4) then   ! Store stress at each integration point (if space was allocated to do so)
-            SVARS(4*kint-3:4*kint) = stress(1:4)
+        if (NSVARS>=n_points*4) then   ! Store stress at each integration point (if space was allocated to do so)            
+            SVARS(4*kint-3:4*kint) = stress(1:4)            
         endif
       end do
+            
+      return
       
-      !PNEWDT = 1.d0  
+      
 
       END SUBROUTINE UEL
 
