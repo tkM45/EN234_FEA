@@ -111,6 +111,7 @@
       double precision  ::  dN1dxi(3)                         ! 1D shape function derivatives
       double precision  ::  norm(2)                           ! Normal to an element face
       double precision  ::  dxdxi1(2)                         ! Derivative of 1D spatial coord wrt normalized areal coord
+      double precision  :: dummy(2)
     !
       double precision  ::  strain(4)                         ! Strain vector contains [e11, e22, e33, 2e12, 2e13, 2e23]
       double precision  ::  stress(4)                         ! Stress vector contains [s11, s22, s33, s12, s13, s23]
@@ -124,9 +125,11 @@
       double precision  ::  kua(18,4)                         ! Upper quadrant of stiffness
       double precision  ::  alpha(4)                          ! Internal DOF for incompatible mode element
       double precision  ::  dxidx(2,2), determinant, det0     ! Jacobian inverse and determinant
+      double precision  ::  dtJ0,dtJxi                        ! Jacobian inverse and determinant
       double precision  ::  E, xnu, D44, D11, D12             ! Material properties
-      !double precision :: trial(5,16)
-
+      double precision,allocatable,dimension (:) ::  uAlpha ! Material properties
+      double precision,allocatable,dimension (:,:) :: rTemp ! Material properties
+      
     !
     !     Example ABAQUS UEL implementing 2D linear elastic elements
     !     Includes option for incompatible mode elements
@@ -154,7 +157,8 @@
     
       RHS(1:MLVARX,1) = 0.d0
       AMATRX(1:NDOFEL,1:NDOFEL) = 0.d0
-    
+      ktemp = 0.d0
+      
       D = 0.d0
       E = PROPS(1)
       xnu = PROPS(2)
@@ -174,55 +178,213 @@
           
       ENERGY(1:8) = 0.d0
       
-      !trial=0.d0
-      !trial(2,2:16:2) = 22
-    
-    !     --  Loop over integration points
-      do kint = 1, n_points
       
-        call abq_UEL_2D_shapefunctions(xi(1:2,kint),NNODE,N,dNdxi)
-        dxdxi = matmul(coords(1:2,1:NNODE),dNdxi(1:NNODE,1:2))
+      select case (JTYPE)
+      
+      CASE (1)
+      !------------
+      !Case -1 (Normal element)
+      !------------
+    
+        !     --  Loop over integration points      
+      
+          do kint = 1, n_points
+      
+            call abq_UEL_2D_shapefunctions(xi(1:2,kint),NNODE,N,dNdxi)
+            dxdxi = matmul(coords(1:2,1:NNODE),dNdxi(1:NNODE,1:2))
         
-        call abq_inverse_LU(dxdxi,dxidx,2)      
+            call abq_inverse_LU(dxdxi,dxidx,2)      
         
-        dNdx(1:NNODE,1:2) = matmul(dNdxi(1:NNODE,1:2),dxidx)
+            dNdx(1:NNODE,1:2) = matmul(dNdxi(1:NNODE,1:2),dxidx)
         
         
-        !----------------
-        !Define the B Matrix
-        !--------------------
-        B = 0.d0
-        B(1,1:2*NNODE:2) = dNdx(1:NNODE,1)
-        B(2,2:2*NNODE:2) = dNdx(1:NNODE,2)        
-        B(4,1:2*NNODE:2) = dNdx(1:NNODE,2)
-        B(4,2:2*NNODE:2) = dNdx(1:NNODE,1)
+            !----------------
+            !Define the B Matrix
+            !--------------------
+            B = 0.d0
+            B(1,1:2*NNODE:2) = dNdx(1:NNODE,1)
+            B(2,2:2*NNODE:2) = dNdx(1:NNODE,2)        
+            B(4,1:2*NNODE:2) = dNdx(1:NNODE,2)
+            B(4,2:2*NNODE:2) = dNdx(1:NNODE,1)
         
     
-        strain = matmul(B(1:4,1:2*NNODE),U(1:2*NNODE))
+            strain = matmul(B(1:4,1:2*NNODE),U(1:2*NNODE))
     
-        stress = matmul(D,strain)
-        determinant = dxidx(1,1)*dxidx(2,2) - dxidx(2,1)*dxidx(1,2)
-        
-        RHS(1:2*NNODE,1) = RHS(1:2*NNODE,1)
-     1   - matmul(transpose(B(1:4,1:2*NNODE)),stress(1:4))*
-     2                                          w(kint)*determinant
+            stress = matmul(D,strain)
+            determinant = dxdxi(1,1)*dxdxi(2,2) - dxdxi(2,1)*dxdxi(1,2)
+                    
+            RHS(1:2*NNODE,1) = RHS(1:2*NNODE,1)-matmul(transpose
+     +       (B(1:4,1:2*NNODE)),stress(1:4))*w(kint)*determinant
     
-        AMATRX(1:2*NNODE,1:2*NNODE) = AMATRX(1:2*NNODE,1:2*NNODE)
-     1  + matmul(transpose(B(1:4,1:2*NNODE)),matmul(D,B(1:4,1:2*NNODE)))
-     2                                             *w(kint)*determinant
+            AMATRX(1:2*NNODE,1:2*NNODE) = AMATRX(1:2*NNODE,1:2*NNODE)+
+     +             matmul(transpose(B(1:4,1:2*NNODE)),
+     +             matmul(D,B(1:4,1:2*NNODE)))*w(kint)*determinant
                 
-        ENERGY(2) = ENERGY(2)
-     1   + 0.5D0*dot_product(stress,strain)*w(kint)*determinant           ! Store the elastic strain energy
+            ENERGY(2) = ENERGY(2)
+     +            + 0.5D0*dot_product(stress,strain)*w(kint)*determinant  ! Store the elastic strain energy
     
-        if (NSVARS>=n_points*4) then   ! Store stress at each integration point (if space was allocated to do so)            
-            SVARS(4*kint-3:4*kint) = stress(1:4)            
-        endif
-      end do
+            if (NSVARS>=n_points*4) then   ! Store stress at each integration point (if space was allocated to do so)            
+                SVARS(4*kint-3:4*kint) = stress(1:4)            
+            endif
             
-      return
+            
+          end do
+          
+          
+      !---------------------
+      !Case 2 - Incompatible mode elements
+      !---------------------
+      CASE (2)
+      
+        !----------------
+        !Calculate the Jacobian at the center of the element
+        !----------------
+        
+        if (NNODE==3 .OR. NNODE==6) then
+           dummy=(/0.3333d0,0.3333d0/)
+        else
+          dummy=(/0.d0,0.d0/)
+        end if
+        
+        call abq_UEL_2D_shapefunctions(dummy,NNODE,N,dNdxi)        
+        dxdxi = matmul(coords(1:2,1:NNODE),dNdxi(1:NNODE,1:2))
+        dtJ0 = dxdxi(1,1)*dxdxi(2,2) - dxdxi(2,1)*dxdxi(1,2)
+         
+      
+        do kint = 1, n_points
+      
+            call abq_UEL_2D_shapefunctions(xi(1:2,kint),NNODE,N,dNdxi)
+            dxdxi = matmul(coords(1:2,1:NNODE),dNdxi(1:NNODE,1:2))
+            dtJxi = dxdxi(1,1)*dxdxi(2,2) - dxdxi(2,1)*dxdxi(1,2)
+            call abq_inverse_LU(dxdxi,dxidx,2)      
+        
+            dNdx(1:NNODE,1:2) = matmul(dNdxi(1:NNODE,1:2),dxidx)
+        
+        
+            !----------------
+            !Define the B Matrix
+            !--------------------
+            B = 0.d0
+            B(1,1:2*NNODE:2) = dNdx(1:NNODE,1)
+            B(2,2:2*NNODE:2) = dNdx(1:NNODE,2)        
+            B(4,1:2*NNODE:2) = dNdx(1:NNODE,2)
+            B(4,2:2*NNODE:2) = dNdx(1:NNODE,1)
+            
+            !------------
+            !alpha terms in B Matrix
+            !------------
+            ad11 = xi(1,kint)*(dtJ0/dtJxi)*dxidx(1,1)
+            ad12 = xi(1,kint)*(dtJ0/dtJxi)*dxidx(1,2)
+            ad21 = xi(2,kint)*(dtJ0/dtJxi)*dxidx(2,1)
+            ad22 = xi(2,kint)*(dtJ0/dtJxi)*dxidx(2,2)
+            
+            B(1,(2*NNODE)+1) = ad11
+            B(1,(2*NNODE)+3) = ad21            
+            B(2,(2*NNODE)+2) = ad12
+            B(2,(2*NNODE)+4) = ad22
+            B(4,(2*NNODE)+1) = ad12
+            B(4,(2*NNODE)+2) = ad11
+            B(4,(2*NNODE)+3) = ad22
+            B(4,(2*NNODE)+4) = ad21
+    
+            ktemp(1:(2*NNODE)+4,1:2*NNODE+4) = ktemp(1:(2*NNODE)+4,1
+     +      :(2*NNODE)+4)+  matmul(transpose(B(1:4,1:(2*NNODE)+4)),
+     +             matmul(D,B(1:4,1:(2*NNODE)+4)))*w(kint)*dtJxi
+                
+     
+        end do
+        
+        kaa(1:4,1:4)= ktemp(2*NNODE+1:2*NNODE+4,2*NNODE+1:(2*NNODE)+4)
+        kuu(1:2*NNODE,1:2*NNODE) = ktemp(1:2*NNODE,1:2*NNODE)        
+        kau(1:4,1:2*NNODE)= ktemp(2*NNODE+1:2*NNODE+4,1:2*NNODE)
+        kua(1:2*NNODE,1:4)= ktemp(1:2*NNODE,2*NNODE+1:(2*NNODE)+4)
+        
+        call abq_inverse_LU(kaa,kaainv,4)          
+        alpha=-1* matmul(kaainv,matmul(kau(1:4,1:2*NNODE),U(1:2*NNODE)))
+        
+        
+        !-------------
+        !Calculate the strain, stress after accounting for alpha
+        !-------------
+        
+        Allocate (uAlpha(2*NNODE+4))
+        Allocate (rTemp(2*NNODE+4,1))
+        
+        uAlpha  = 0.d0
+        rTemp = 0.d0
+        
+        do kint = 1, n_points
+        
+            call abq_UEL_2D_shapefunctions(xi(1:2,kint),NNODE,N,dNdxi) 
+            dxdxi = matmul(coords(1:2,1:NNODE),dNdxi(1:NNODE,1:2))
+            dtJxi = dxdxi(1,1)*dxdxi(2,2) - dxdxi(2,1)*dxdxi(1,2)
+            call abq_inverse_LU(dxdxi,dxidx,2)        
+            dNdx(1:NNODE,1:2) = matmul(dNdxi(1:NNODE,1:2),dxidx)
+            
+            !----------------
+            !Define the B Matrix
+            !--------------------
+            B = 0.d0
+            B(1,1:2*NNODE:2) = dNdx(1:NNODE,1)
+            B(2,2:2*NNODE:2) = dNdx(1:NNODE,2)        
+            B(4,1:2*NNODE:2) = dNdx(1:NNODE,2)
+            B(4,2:2*NNODE:2) = dNdx(1:NNODE,1)
+            
+            !------------
+            !alpha terms in B Matrix
+            !------------
+            ad11 = xi(1,kint)*(dtJ0/dtJxi)*dxidx(1,1)
+            ad12 = xi(1,kint)*(dtJ0/dtJxi)*dxidx(1,2)
+            ad21 = xi(2,kint)*(dtJ0/dtJxi)*dxidx(2,1)
+            ad22 = xi(2,kint)*(dtJ0/dtJxi)*dxidx(2,2)
+            
+            B(1,(2*NNODE)+1) = ad11
+            B(1,(2*NNODE)+3) = ad21            
+            B(2,(2*NNODE)+2) = ad12
+            B(2,(2*NNODE)+4) = ad22
+            B(4,(2*NNODE)+1) = ad12
+            B(4,(2*NNODE)+2) = ad11
+            B(4,(2*NNODE)+3) = ad22
+            B(4,(2*NNODE)+4) = ad21
+            
+            
+            
+            uAlpha(1:2*NNODE) = U(1:2*NNODE)
+            uAlpha(2*NNODE+1:2*NNODE+4) = alpha(1:4)
+            
+            strain = matmul(B(1:4,1:2*NNODE+4),uAlpha(1:2*NNODE+4))
+            stress = matmul(D,strain)
+            
+            
+            rTemp(1:2*NNODE+4,1) = rTemp(1:2*NNODE+4,1)-matmul(transpose
+     +               (B(1:4,1:2*NNODE+4)),stress(1:4))*
+     +               w(kint)*dtJxi
+         
+            ENERGY(2) = ENERGY(2)
+     +           + 0.5D0*dot_product(stress,strain)*w(kint)*dtJxi  ! Store the elastic strain energy
+         
+            if (NSVARS>=n_points*4) then   ! Store stress at each integration point (if space was allocated to do so)            
+                SVARS(4*kint-3:4*kint) = stress(1:4)
+            end if 
+                
+        end do
+         
+        AMATRX(1:2*NNODE,1:2*NNODE) = kuu(1:2*NNODE,1:2*NNODE)
+     +     -matmul(kua(1:2*NNODE,1:4),matmul(kaainv,kau(1:4,1:2*NNODE)))
+     
+     
+        RHS(1:2*NNODE,1)= rTemp(1:2*NNODE,1)- matmul(kua(1:2*NNODE,1:4),
+     +             matmul(kaainv,rTemp(2*NNODE+1:2*NNODE+4,1)))
+        
+        
+        Deallocate(uAlpha)
+        Deallocate(rTemp)
+        
+        
+          
+      END SELECT
       
       
-
       END SUBROUTINE UEL
 
 
@@ -704,3 +866,5 @@
       end subroutine abq_inverse_LU
 
 
+
+      

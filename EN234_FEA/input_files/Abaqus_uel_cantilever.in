@@ -108,7 +108,7 @@
 %     The parameters are no. nodes on the element, total no. state variables (4*# integration points), integer identifier
 
       ELEMENTS, USER
-        PARAMETERS, 4, 16, U1
+        PARAMETERS, 4, 16, U2
 %       Define element properties - the values are passed to user subroutine elstif in the order they are listed here
 %       For the example provided, the params are Youngs Modulus, Poissons ratio
         PROPERTIES
@@ -194,6 +194,12 @@
           0.d0, 0.d0                  % Each line gives a time value and then a function value
          10.d0, 1.d-03
         END HISTORY
+
+%       The HISTORY key defines a time history that can be applied to DOFs or distributed loads
+        HISTORY, dof_history
+         0.d0, 0.d0                  % Each line gives a time value and then a function value
+         10.d0, 0.001d0
+        END HISTORY
  
 %       The NODESET key defines a list of nodes
         NODESET, left, GENERATE
@@ -234,7 +240,7 @@
 
 %   The CHECK STIFFNESS key tests the element subroutine to ensure that
 %   the residual force vector is consistent with the stiffness
-       CHECK STIFFNESS, U1
+       CHECK STIFFNESS, U2
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Analysis %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

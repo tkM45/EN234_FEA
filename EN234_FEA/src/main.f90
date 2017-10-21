@@ -66,8 +66,8 @@ program en234fea
 !   Homework 3: develop and test an ABAQUS user element implementing 2D linear elasticity with full integration
 
 !   Simple test of a 2D plane element
-   infil = 'input_files/abaqus_uel_linear_elastic_2d.in'
-   outfil = 'output_files/abaqus_uel_linear_elastic_2d.out'
+   !infil = 'input_files/abaqus_uel_linear_elastic_2d.in'
+   !outfil = 'output_files/abaqus_uel_linear_elastic_2d.out'
 
 !  Solve hole-in-a-plate problem with 4 noded quadrilateral elements
   !infil = 'input_files/Abaqus_uel_holeplate_2d_quad4.in'
@@ -86,8 +86,8 @@ program en234fea
 
 !  HW5  Cantilever beam to test incompatible mode elements
 
-!   infil = 'input_files/Abaqus_uel_cantilever.in'
-!   outfil = 'Output_files/Abaqus_uel_cantilever.out'
+   infil = 'input_files/Abaqus_uel_cantilever.in'
+   outfil = 'Output_files/Abaqus_uel_cantilever.out'
 
 !  HW6  Porous elasticity UMAT
 
@@ -129,7 +129,7 @@ program en234fea
    open (unit = IOR, file = trim(infil), status = 'old', ERR=500)
    open (UNIT = IOW, FILE = trim(outfil), STATUS = 'unknown', ERR=500)
    
-   OPEN(UNIT=222,FILE="data.txt",FORM="FORMATTED",STATUS="REPLACE",ACTION="WRITE")
+   !OPEN(UNIT=222,FILE="data.txt",STATUS="REPLACE",ACTION="WRITE")
    
    call read_input_file
   
@@ -147,7 +147,7 @@ program en234fea
    if (explicitdynamicstep) call explicit_dynamic_step
   
    write(6,*) ' Program completed successfully '
-   close(unit=222)
+   !close(unit=222)
 
    stop
   
