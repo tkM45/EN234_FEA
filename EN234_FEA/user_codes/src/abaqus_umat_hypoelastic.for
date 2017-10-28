@@ -1,17 +1,17 @@
 !
-!    ABAQUS format user material subroutine for explicit dynamics
+!    ABAQUS format user material subroutine for small strain hypoelastic material
 !
 !
 
-      SUBROUTINE UMAT_elastic(STRESS,STATEV,DDSDDE,SSE,SPD,SCD,
+      SUBROUTINE UMAT(STRESS,STATEV,DDSDDE,SSE,SPD,SCD,
      1 RPL,DDSDDT,DRPLDE,DRPLDT,
      2 STRAN,DSTRAN,TIME,DTIME,TEMP,DTEMP,PREDEF,DPRED,CMNAME,
      3 NDI,NSHR,NTENS,NSTATV,PROPS,NPROPS,COORDS,DROT,PNEWDT,
      4 CELENT,DFGRD0,DFGRD1,NOEL,NPT,LAYER,KSPT,KSTEP,KINC)
 !
-!      INCLUDE 'ABA_PARAM.INC'
+      INCLUDE 'ABA_PARAM.INC'
 !     WARNING - the aba_param.inc file declares
-        Implicit double precision (a-h,o-z)
+!        Implicit double precision (a-h,o-z)
 !     This means that, by default, any variables with
 !     first letter between a-h or o-z are double precision.
 !     The rest are integers.
@@ -41,7 +41,7 @@
 !         for the user-defined material, ABAQUS/Standard will use only
 !         the symmetric part of DDSDDE. The symmetric part of the matrix
 !         is calculated by taking one half the sum of the matrix and its transpose.
-
+!         EN234FEA always uses the full matrix (no symmetry is assumed)
 
 !      STRESS(NTENS)
 !         This array is passed in as the stress tensor at the beginning
@@ -251,63 +251,67 @@
 !
 !     Local variables
 
-      double precision E,xnu,e0,pt,G
-      integer i,j
+      double precision :: edev(6)
+      double precision :: evol
+      double precision :: se,ee
+      double precision :: s0,e0,n,K,dsedee,Et,Es,pt,G,xnu,Kb,ptemp
+      double precision :: Gmatrix(ntens,ntens),Kbmatrix(ntens,ntens)
 
-      ddsdde = 0.d0
-
-      E = props(1)
-      xnu = props(2)
-      !e0=props(3)
-      !pt = props(4)
-
-      !for debugging, you can use
-      write(6,*) ' Hello ',G,xnu,e0,pt
+      integer :: j
       
-      !Output is then written to the .dat file
+       G = PROPS(1)
+       xnu = PROPS(2)
+       e0 = PROPS(3)
+       pt = PROPS(4)
+       K = (pt* (1.d0 - 2.d0*xnu)*(1.d0+e0))/(1+xnu)
+       
+       !edev(1:3) = STRAN(1:3) - evol/3.d0 
+       
+       !write(6,*) ' Hello ',STRAN,DSTRAN
+       evol = sum(STRAN(1:3)+DSTRAN(1:3))
+       edev(1:3) = STRAN(1:3)+DSTRAN(1:3) - evol/3.d0
+       edev(4:6) = 0.5d0*(STRAN(4:6)+DSTRAN(4:6))
 
-      If (ndi==3 .and. nshr==1) then    ! Plane strain or axisymmetry
-         ddsdde(1,1) = 1.d0-xnu
-         ddsdde(1,2) = xnu
-         ddsdde(1,3) = xnu
-         ddsdde(2,1) = xnu
-         ddsdde(2,2) = 1.d0-xnu
-         ddsdde(2,3) = xnu
-         ddsdde(3,1) = xnu
-         ddsdde(3,2) = xnu
-         ddsdde(3,3) = 1.d0-xnu
-         ddsdde(4,4) = 0.5d0*(1.d0-2.d0*xnu)
-         ddsdde = ddsdde*E/( (1.d0+xnu)*(1.d0-2.d0*xnu) )
-      else if (ndi==2 .and. nshr==1) then   ! Plane stress
-         ddsdde(1,1) = 1.d0
-         ddsdde(1,2) = xnu
-         ddsdde(2,1) = xnu
-         ddsdde(2,2) = 1.d0
-         ddsdde(3,3) = 0.5d0*(1.d0-xnu)
-         ddsdde = ddsdde*E/( (1.d0+xnu*xnu) )
-      else ! 3D
-         ddsdde(1,1) = 1.d0-xnu
-         ddsdde(1,2) = xnu
-         ddsdde(1,3) = xnu
-         ddsdde(2,1) = xnu
-         ddsdde(2,2) = 1.d0-xnu
-         ddsdde(2,3) = xnu
-         ddsdde(3,1) = xnu
-         ddsdde(3,2) = xnu
-         ddsdde(3,3) = 1.d0-xnu
-         ddsdde(4,4) = 0.5d0*(1.d0-2.d0*xnu)
-         ddsdde(5,5) = ddsdde(4,4)
-         ddsdde(6,6) = ddsdde(4,4)
-         ddsdde = ddsdde*E/( (1.d0+xnu)*(1.d0-2.d0*xnu) )
-      endif
-!
-!     NOTE: ABAQUS uses engineering shear strains,
-!     i.e. stran(ndi+1) = 2*e_12, etc...
-      do i = 1,ntens
-      do j = 1,ntens
-         stress(i) = stress(i) + ddsdde(i,j)*dstran(j)
-      end do
-      end do
 
+       !---------------------
+       !For small strains
+       !---------------------       
+       do k1=1, ntens          
+          stress(k1)=2.d0*G*edev(k1)
+          
+       end do
+       
+       ptemp = pt*(1-exp(-(1.d0+e0)*evol/K))/3.d0
+             
+       do k1=1,3          
+          stress(k1)=stress(k1)+ptemp
+       end do
+              
+       DDSDDE(1:6,1:6) = 0.d0
+       
+       Gmatrix = 0.d0
+       Gmatrix(1,1) = 2.d0
+       Gmatrix(2,2) = 2.d0
+       Gmatrix(3,3) = 2.d0
+       Gmatrix(4,4) = 1.d0
+       Gmatrix(5,5) = 1.d0
+       Gmatrix(6,6) = 1.d0
+       
+       Gmatrix = G*Gmatrix
+       
+       Kbmatrix = 0.d0
+       
+       do k1=1, 3          
+          do k2=1,3
+              Kbmatrix(k1,k2) = 1.d0
+          end do              
+       end do
+       
+       Kb = ((pt/3.0d0 ) * ((1+e0)/K) * (exp(-(1.d0+e0)*evol/K)))
+       Kb = Kb- 2*G/3.d0
+       
+       Kbmatrix = Kb* Kbmatrix       
+       DDSDDE = Gmatrix + Kbmatrix
+       
       RETURN
-      END subroutine UMAT_elastic
+      END SUBROUTINE UMAT
