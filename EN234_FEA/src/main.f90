@@ -91,12 +91,12 @@ program en234fea
 
 !  HW6  Porous elasticity UMAT
 
-   infil = 'input_files/Abaqus_umat_porous_elastic.in'
-   outfil = 'Output_files/Abaqus_umat_porous_elastic.out'
+   !infil = 'input_files/Abaqus_umat_porous_elastic.in'
+   !outfil = 'Output_files/Abaqus_umat_porous_elastic.out'
 
 !  HW7 Hyperelastic user element
-!   infil = 'input_files/Abaqus_uel_hyperelastic.in'
-!   outfil = 'Output_files/Abaqus_uel_hyperelastic.out'
+   infil = 'input_files/Abaqus_uel_hyperelastic.in'
+   outfil = 'Output_files/Abaqus_uel_hyperelastic.out'
 
 !   Hyperelastic umat
 !  infil = 'input_files/Abaqus_umat_hyperelastic2.in'
@@ -129,7 +129,7 @@ program en234fea
    open (unit = IOR, file = trim(infil), status = 'old', ERR=500)
    open (UNIT = IOW, FILE = trim(outfil), STATUS = 'unknown', ERR=500)
    
-   !OPEN(UNIT=222,FILE="data.txt",STATUS="REPLACE",ACTION="WRITE")
+   OPEN(UNIT=222,FILE="data.txt",STATUS="REPLACE",ACTION="WRITE")
    
    call read_input_file
   
@@ -147,7 +147,7 @@ program en234fea
    if (explicitdynamicstep) call explicit_dynamic_step
   
    write(6,*) ' Program completed successfully '
-   !close(unit=222)
+   close(unit=222)
 
    stop
   
