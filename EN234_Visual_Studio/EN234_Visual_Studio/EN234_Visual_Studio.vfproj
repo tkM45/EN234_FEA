@@ -73,8 +73,7 @@
 		<File RelativePath="..\..\EN234_FEA\input_files\Abaqus_vuel_holeplate_3d.in"/>
 		<File RelativePath="..\..\EN234_FEA\input_files\Abaqus_vuel_linear_elastic_3d.in"/>
 		<File RelativePath="..\..\EN234_FEA\input_files\Abaqus_vumat_linear_elastic_3d.in"/>
-		<File RelativePath="..\..\EN234_FEA\input_files\Abaqus_vumat_McCormick.in"/>
-		<File RelativePath="..\..\EN234_FEA\user_codes\src\user_print_hypoelastic.f90"/></Filter>
+		<File RelativePath="..\..\EN234_FEA\input_files\Abaqus_vumat_McCormick.in"/></Filter>
 		<Filter Name="Output_Files">
 		<File RelativePath="..\..\EN234_FEA\Output_Files\Abaqus_uel_linear_elastic_3d.out"/></Filter>
 		<Filter Name="Resource Files" Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
@@ -112,6 +111,8 @@
 		<Filter Name="Source">
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\abaqus_tecplot_interface.f90"/>
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\abaqus_uel_2D.for"/>
+		<File RelativePath="..\..\EN234_FEA\user_codes\src\abaqus_uel_cahnHilliard.for"/>
+		<File RelativePath="..\..\EN234_FEA\user_codes\src\abaqus_uel_cahnHilliard_plain.for"/>
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\abaqus_uel_hyperElastic.for"/>
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\abaqus_uel_linelastic_3d.for"/>
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\abaqus_umat_elastic.for"/>
@@ -128,5 +129,6 @@
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\user_mesh.f90"/>
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\user_prescribeddof.f90"/>
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\user_prescribedforce.f90"/>
-		<File RelativePath="..\..\EN234_FEA\user_codes\src\user_print_cahn_hilliard.f90"/></Filter></Filter></Files>
+		<File RelativePath="..\..\EN234_FEA\user_codes\src\user_print_cahn_hilliard.f90"/>
+		<File RelativePath="..\..\EN234_FEA\user_codes\src\user_print_hypoelastic.f90"/></Filter></Filter></Files>
 	<Globals/></VisualStudioProject>
