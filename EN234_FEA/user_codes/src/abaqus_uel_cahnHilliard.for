@@ -187,7 +187,7 @@
       D(9,7) = theta*diffusion_coeft
       D(7,9)=-kappa
       D(6,8)=-kappa
-      D(5,5) = 1.d0/DTIME
+      D(5,5) = 1.d0/DTIME 
       
       
       tempD0 = 0.d0
