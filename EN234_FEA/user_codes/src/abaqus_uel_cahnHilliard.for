@@ -267,7 +267,7 @@
         c = sol(5)
         
         strain= (/sol(1),sol(2),0.d0,sol(3)/)
-        newStrain = strain-c*Omega*(/1.d0,1.d0,1.d0,0.d0/)
+        newStrain = strain-c*Omega*(/1.d0,1.d0,1.d0,0.d0/)/3.d0
         stress=matmul(Delastic,newStrain)
         
         q=0.d0
