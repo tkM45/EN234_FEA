@@ -113,6 +113,7 @@
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\abaqus_uel_2D.for"/>
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\abaqus_uel_cahnHilliard.for"/>
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\abaqus_uel_cahnHilliard_plain.for"/>
+		<File RelativePath="..\..\EN234_FEA\user_codes\src\abaqus_uel_ContinuumBeam.for"/>
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\abaqus_uel_hyperElastic.for"/>
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\abaqus_uel_linelastic_3d.for"/>
 		<File RelativePath="..\..\EN234_FEA\user_codes\src\abaqus_umat_elastic.for"/>
