@@ -189,15 +189,15 @@
       !Mtemp = 0.d0
       !RHSTemp =0.d0
       !AMATRXTemp =0.d0
-      w=0.d0
-      w(1:5)=(/0.5d0,1.d0,1.d0,1.d0,0.5d0/)
+      w=0.d0      
+      w(1:5)=(/0.25d0,.5d0,.5d0,.5d0,0.25d0/)
       
       !--------------
       !Define D for a plane strain matrix
       !--------------
       D=0.d0
       D(1,1) = E
-      D(2,2) = 0.5d0*E/(1.d0+xnu)
+      D(2,2) =0.25d0*E/(1.d0+xnu)
            
       ENERGY(1:8) = 0.d0
       
@@ -247,11 +247,12 @@
         
         strain = matmul(R,strainGlobal)
         stress = matmul(D,strain)
+      
         
         
         RBT = matmul(R,matmul(B(1:3,1:8),Tmat))
         
-        RHS(1:3*NNODE,1)=RHS(1:3*NNODE,1)-(width*length*h*0.5d0*w(kint)*
+       RHS(1:3*NNODE,1)=RHS(1:3*NNODE,1)-(width*length*h*0.5d0*w(kint)*
      +        matmul(transpose(RBT),stress))
      
         AMATRX(1:3*NNODE,1:3*NNODE)=AMATRX(1:3*NNODE,1:3*NNODE)+
